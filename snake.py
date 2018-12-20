@@ -38,21 +38,6 @@ class Square():
             self.y = 300
 
 
-pygame.init()
-size = width, height = 530, 300
-screen = pygame.display.set_mode(size)
-route = (-10, 0)
-
-score = 0
-
-is_game_over = False
-
-M = pygame.USEREVENT + 1
-
-list_of_squares = [Square(250, 150), Square(270, 150), Square(290, 150), Square(310, 150)]
-current_apple = Apple()
-
-
 def add_square():
     x, y = list_of_squares[-1].get_coords()
     list_of_squares.append(Square(x - route[0], y - route[1]))
@@ -60,34 +45,58 @@ def add_square():
 
 
 def check_eat(x, y):
-    global score
+    global score, time_int, time
     if current_apple.x <= x < current_apple.x + 20 and current_apple.y <= y < current_apple.y + 20 or\
             x <= current_apple.x < x + 20 and y <= current_apple.y < y + 20:
         add_square()
         score += 1
+        time /= 1.01
+        time_int = int(time)
         return True
 
     return False
 
 
 def draw_game_over():
+    best_score = score
+    with open('best score.txt', 'r', encoding="utf8") as file:
+        a = int(file.read())
+        if score < a:
+            best_score = a
+
+    with open('best score.txt', 'w') as file:
+        file.write(str(best_score))
     screen.fill((0, 0, 0))
     font = pygame.font.Font(None, 50)
-    text = font.render("GAMEOVER "
-                       "Your score: " + str(score), 1, (100, 255, 100))
+    text = font.render("GAMEOVER Your score: " + str(score), 1, (100, 255, 100))
+
+    text_best_score = font.render('Best score: ' + str(best_score), 1, (50, 200, 50))
+    text_best_score_x = width // 2 - text_best_score.get_width() // 2
+    text_best_score_y = height // 2 - text_best_score.get_height() // 2 - 50
     text_x = width // 2 - text.get_width() // 2
     text_y = height // 2 - text.get_height() // 2
     text_w = text.get_width()
     text_h = text.get_height()
     screen.blit(text, (text_x, text_y))
+    screen.blit(text_best_score, (text_best_score_x, text_best_score_y))
     pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                           text_w + 20, text_h + 20), 1)
+                                               text_w + 20, text_h + 20), 1)
+
+
+def draw_menu():
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font(None, 50)
+    text = font.render("Start", 1, (250, 100, 100))
+    text_x = width // 2 - text.get_width() // 2
+    text_y = height // 2 - text.get_height() // 2
+    screen.blit(text, (text_x, text_y))
 
 
 def draw_score():
-    font = pygame.font.Font(None, 50)
-    text = font.render(str(score), 1, (100, 255, 100))
-    screen.blit(text, (500, 10))
+    if start:
+        font = pygame.font.Font(None, 50)
+        text = font.render(str(score), 1, (100, 255, 100))
+        screen.blit(text, (500, 10))
 
 
 def draw(route):
@@ -128,27 +137,52 @@ def draw(route):
     else:
         draw_game_over()
 
+
 running = True
+if __name__ == '__main__':
+    pygame.init()
+    size = width, height = 530, 300
+    screen = pygame.display.set_mode(size)
+    route = (-10, 0)
+    start = False
 
-while running:
-    pygame.time.set_timer(M, 70)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    score = 0
 
-    pygame.time.delay(60)
+    delta = 10
 
-    keys = pygame.key.get_pressed()
+    time = 65
+    time_int = 65
 
-    if keys[pygame.K_w] and route != (0, 10):
-        route = (0, -10)
-    elif keys[pygame.K_a] and route != (10, 0):
-        route = (-10, 0)
-    elif keys[pygame.K_s] and route != (0, -10):
-        route = (0, 10)
-    elif keys[pygame.K_d] and route != (-10, 0):
-        route = (10, 0)
+    is_game_over = False
 
-    draw(route)
-    pygame.display.flip()
-pygame.quit()
+    list_of_squares = [Square(250, 150), Square(270, 150), Square(290, 150), Square(310, 150)]
+    current_apple = Apple()
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN and not start:
+                x, y = event.pos
+                if 150 <= x <= 350 and 100 <= y <= 200:
+                    start = True
+            if event.type == pygame.QUIT:
+                running = False
+
+        pygame.time.delay(time_int)
+
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_w] and route != (0, 10):
+            route = (0, -delta)
+        elif keys[pygame.K_a] and route != (10, 0):
+            route = (-delta, 0)
+        elif keys[pygame.K_s] and route != (0, -10):
+            route = (0, delta)
+        elif keys[pygame.K_d] and route != (-10, 0):
+            route = (delta, 0)
+
+        if start:
+            draw(route)
+        else:
+            draw_menu()
+        pygame.display.flip()
+    pygame.quit()
