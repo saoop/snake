@@ -15,6 +15,7 @@ class Apple():
         while self.y in r:
             self.y = randrange(0, 300, 20)
 
+
 class Square():
     def __init__(self, x, y):
         self.x = x
@@ -57,7 +58,24 @@ def check_eat(x, y):
     return False
 
 
+def draw_boom():
+    x, y = list_of_squares[0].get_coords()
+    pygame.time.delay(600)
+    pygame.draw.rect(screen, (255, 255, 0), (x, y, 20, 20))
+    pygame.display.flip()
+    pygame.time.delay(200)
+    pygame.draw.rect(screen, (255, 0, 0), (x - 5, y - 5, 30, 30), 10)
+    pygame.display.flip()
+    pygame.time.delay(200)
+    pygame.draw.rect(screen, (255, 255, 0), (x - 10, y - 10, 40, 40), 5)
+    pygame.display.flip()
+    pygame.time.delay(500)
+
+
 def draw_game_over():
+    global end
+    end = True
+
     best_score = score
     with open('best score.txt', 'r', encoding="utf8") as file:
         a = int(file.read())
@@ -131,11 +149,24 @@ def draw(route):
             if y1 - 10 == y2 and x2 == x1 or y1 == y2 and x2 + 10 == x1 \
                     or y1 + 10 == y2 and x2 == x1 or y1 == y2 and x2 - 10 == x1:
                 is_game_over = True
+                draw_boom()
                 pygame.time.delay(3000)
                 print(x1, y1, x2, y2)
                 break
     else:
         draw_game_over()
+
+
+def set_standart():
+    global start, end, is_game_over, route, time, score, time_int, list_of_squares
+    start = True
+    end = False
+    is_game_over = False
+    route = (-10, 0)
+    time = 65
+    score = 0
+    time_int = 65
+    list_of_squares = [Square(250, 150), Square(270, 150), Square(290, 150), Square(310, 150)]
 
 
 running = True
@@ -147,6 +178,8 @@ if __name__ == '__main__':
     start = False
 
     score = 0
+
+    end = False
 
     delta = 10
 
@@ -163,7 +196,11 @@ if __name__ == '__main__':
             if event.type == pygame.MOUSEBUTTONDOWN and not start:
                 x, y = event.pos
                 if 150 <= x <= 350 and 100 <= y <= 200:
-                    start = True
+                    set_standart()
+
+            if event.type == pygame.MOUSEBUTTONDOWN and end:
+                start = False
+
             if event.type == pygame.QUIT:
                 running = False
 
