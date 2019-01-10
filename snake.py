@@ -4,6 +4,43 @@ from random import randint
 from random import randrange
 
 
+class EvilSnake():
+    def __init__(self):
+        self.list_snake = [Square(100 + i * 20, 100) for i in range(3)]
+        self.delta = 5
+        self.true_delta = 5.0
+
+        if current_apple.x == self.list_snake[0].x:
+            if current_apple.y < self.list_snake[0].y:
+                self.route = (0, -self.delta)
+            elif current_apple.y > self.list_snake[0].y:
+                self.route = (0, self.delta)
+        else:
+            if current_apple.x < self.list_snake[0].x:
+                self.route = (-self.delta, 0)
+            elif current_apple.x > self.list_snake[0].x:
+                self.route = (self.delta, 0)
+
+    def update_route(self):
+        if current_apple.x == self.list_snake[0].x:
+            if current_apple.y < self.list_snake[0].y:
+                self.route = (0, -self.delta)
+            elif current_apple.y > self.list_snake[0].y:
+                self.route = (0, self.delta)
+        else:
+            if current_apple.x < self.list_snake[0].x:
+                self.route = (-self.delta, 0)
+            elif current_apple.x > self.list_snake[0].x:
+                self.route = (self.delta, 0)
+
+    def set_route(self, route):
+        self.route = route
+
+    def update_speed(self):
+        self.true_delta += 0.2 * score
+        self.delta = int(self.true_delta)
+
+
 class Apple():
     def __init__(self):
         self.x = randrange(0, 500, 20)
@@ -29,30 +66,32 @@ class Square():
     def set_coords(self, x, y):
         self.x = x
         self.y = y
-        if self.x > 500:
+        if self.x > width - 30:
             self.x = 0
         if self.x < 0:
-            self.x = 500
-        if self.y > 300:
+            self.x = width - 30
+        if self.y > height:
             self.y = 0
         if self.y < 0:
-            self.y = 300
+            self.y = height
 
 
-def add_square():
-    x, y = list_of_squares[-1].get_coords()
-    list_of_squares.append(Square(x - route[0], y - route[1]))
-    list_of_squares.append(Square(x - 2 * route[0], y - 2 * route[1]))
+def add_square(array):
+    x, y = array[-1].get_coords()
+    array.append(Square(x - route[0], y - route[1]))
+    array.append(Square(x - 2 * route[0], y - 2 * route[1]))
 
 
-def check_eat(x, y):
+def check_eat(x, y, array, name='evil'):
     global score, time_int, time
     if current_apple.x <= x < current_apple.x + 20 and current_apple.y <= y < current_apple.y + 20 or\
             x <= current_apple.x < x + 20 and y <= current_apple.y < y + 20:
-        add_square()
-        score += 1
+        add_square(array)
+        if name == 'me':
+            score += 1
         time /= 1.01
         time_int = int(time)
+
         return True
 
     return False
@@ -129,7 +168,7 @@ def draw(route):
 
         last.set_coords(x + route[0], y + route[1])
         list_of_squares.insert(0, last)
-        if check_eat(x, y):
+        if check_eat(x, y, list_of_squares, name='me'):
             current_apple = Apple()
 
         pygame.draw.rect(screen, (255, 0, 0), (current_apple.x, current_apple.y, 20, 20))
@@ -153,14 +192,35 @@ def draw(route):
                 pygame.time.delay(3000)
                 print(x1, y1, x2, y2)
                 break
+
+        if is_evil_snake_appeared:
+            for square in evil_snake.list_snake:
+                x, y = square.get_coords()
+                pygame.draw.rect(screen, (255, 255, 100), (x, y, 20, 20))
+
+            for square in evil_snake.list_snake:
+                x, y = square.get_coords()
+                if x <= x2 < x + 20 and y <= y2 < y + 20 or\
+            x2 <= x < x2 + 20 and y2 <= y < y2 + 20:
+                    is_game_over = True
+                    draw_boom()
+                break
+            evil_snake.update_route()
+            last = evil_snake.list_snake.pop()
+            x, y = evil_snake.list_snake[0].x, evil_snake.list_snake[0].y
+            last.set_coords(x + evil_snake.route[0], y + evil_snake.route[1])
+            evil_snake.list_snake.insert(0, last)
+            if check_eat(x, y, evil_snake.list_snake):
+                current_apple = Apple()
     else:
         draw_game_over()
 
 
 def set_standart():
-    global start, end, is_game_over, route, time, score, time_int, list_of_squares
+    global start, end, is_game_over, route, time, score, time_int, list_of_squares, is_evil_snake_appeared
     start = True
     end = False
+    is_evil_snake_appeared = False
     is_game_over = False
     route = (-10, 0)
     time = 65
@@ -176,6 +236,8 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     route = (-10, 0)
     start = False
+
+    is_evil_snake_appeared = False
 
     score = 0
 
@@ -208,14 +270,18 @@ if __name__ == '__main__':
 
         keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_w] and route != (0, 10):
+        if keys[pygame.K_w] and route != (0, delta):
             route = (0, -delta)
-        elif keys[pygame.K_a] and route != (10, 0):
+        elif keys[pygame.K_a] and route != (delta, 0):
             route = (-delta, 0)
-        elif keys[pygame.K_s] and route != (0, -10):
+        elif keys[pygame.K_s] and route != (0, -delta):
             route = (0, delta)
-        elif keys[pygame.K_d] and route != (-10, 0):
+        elif keys[pygame.K_d] and route != (-delta, 0):
             route = (delta, 0)
+
+        if score == 2:
+            evil_snake = EvilSnake()
+            is_evil_snake_appeared = True
 
         if start:
             draw(route)
