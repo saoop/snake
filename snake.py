@@ -1,6 +1,6 @@
 import pygame
 from pygame.locals import *
-from random import randint
+from random import randint, choice
 from random import randrange
 
 
@@ -21,17 +21,30 @@ class EvilSnake():
             elif current_apple.x > self.list_snake[0].x:
                 self.route = (self.delta, 0)
 
-    def update_route(self):
-        if current_apple.x == self.list_snake[0].x:
-            if current_apple.y < self.list_snake[0].y:
-                self.route = (0, -self.delta)
-            elif current_apple.y > self.list_snake[0].y:
-                self.route = (0, self.delta)
+    def update_route(self, set_this_route=None):
+        if set_this_route != None:
+            self.route = set_this_route
+            print('sd')
         else:
-            if current_apple.x < self.list_snake[0].x:
-                self.route = (-self.delta, 0)
-            elif current_apple.x > self.list_snake[0].x:
-                self.route = (self.delta, 0)
+            if current_apple.x == self.list_snake[0].x:
+                if current_apple.y < self.list_snake[0].y:
+                    self.route = (0, -self.delta)
+                elif current_apple.y > self.list_snake[0].y:
+                    self.route = (0, self.delta)
+            else:
+                if current_apple.x < self.list_snake[0].x:
+                    self.route = (-self.delta, 0)
+                elif current_apple.x > self.list_snake[0].x:
+                    self.route = (self.delta, 0)
+
+    def check_go(self, x, y):
+        x1, y1 = self.list_snake[0].get_coords()
+        if abs(y - y1) <= 20 and abs(x - x1) <= 20:
+            if self.route[0] == 5 or self.route[0] == -5:
+                return choice([(0, 5), (0, -5)])
+            else:
+                return choice([(5, 0), (-5, 0)])
+        return None
 
     def set_route(self, route):
         self.route = route
@@ -166,6 +179,8 @@ def draw(route):
         x, y = first.get_coords()
         last = list_of_squares.pop()
 
+        set_route = None
+
         last.set_coords(x + route[0], y + route[1])
         list_of_squares.insert(0, last)
         if check_eat(x, y, list_of_squares, name='me'):
@@ -173,12 +188,17 @@ def draw(route):
 
         pygame.draw.rect(screen, (255, 0, 0), (current_apple.x, current_apple.y, 20, 20))
 
-        x2, y2 = list_of_squares[0].get_coords()
+        x2, y2 = list_of_squares[0].get_coords()  #coords of first square
 
         pygame.draw.rect(screen, (10, 180, 10), (x2, y2, 20, 20))
 
         for square in list_of_squares[1:]:
             x1, y1 = square.get_coords()
+            if is_evil_snake_appeared:
+                if evil_snake.check_go(x1, y1) != None:
+                    set_route = evil_snake.check_go(x1, y1)
+                    print('1')
+
             pygame.draw.rect(screen, (0, 255, 0), (x1, y1, 20, 20))
 
         draw_score()
@@ -194,9 +214,16 @@ def draw(route):
                 break
 
         if is_evil_snake_appeared:
+
             for square in evil_snake.list_snake:
                 x, y = square.get_coords()
                 pygame.draw.rect(screen, (255, 255, 100), (x, y, 20, 20))
+
+            evil_snake.update_route(set_route)
+            last = evil_snake.list_snake.pop()
+            x, y = evil_snake.list_snake[0].x, evil_snake.list_snake[0].y
+            last.set_coords(x + evil_snake.route[0], y + evil_snake.route[1])
+            evil_snake.list_snake.insert(0, last)
 
             for square in evil_snake.list_snake:
                 x, y = square.get_coords()
@@ -204,12 +231,8 @@ def draw(route):
             x2 <= x < x2 + 20 and y2 <= y < y2 + 20:
                     is_game_over = True
                     draw_boom()
-                break
-            evil_snake.update_route()
-            last = evil_snake.list_snake.pop()
-            x, y = evil_snake.list_snake[0].x, evil_snake.list_snake[0].y
-            last.set_coords(x + evil_snake.route[0], y + evil_snake.route[1])
-            evil_snake.list_snake.insert(0, last)
+                    break
+
             if check_eat(x, y, evil_snake.list_snake):
                 current_apple = Apple()
     else:
