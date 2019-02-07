@@ -4,9 +4,27 @@ from random import randint, choice
 from random import randrange
 
 
-class EvilSnake():
+class Snake():
     def __init__(self):
         self.list_snake = [Square(100 + i * 20, 100) for i in range(3)]
+        self.delta = 10
+
+    def __getitem__(self, item):
+        return self.list_snake[item]
+
+    def pop(self):
+        return self.list_snake.pop()
+
+    def insert(self, i, elm):
+        self.list_snake.insert(i, elm)
+
+    def append(self, elm):
+        self.list_snake.append(elm)
+
+
+class EvilSnake(Snake):
+    def __init__(self):
+        super().__init__()
         self.delta = 5
         self.true_delta = 5.0
 
@@ -41,9 +59,9 @@ class EvilSnake():
         x1, y1 = self.list_snake[0].get_coords()
         if abs(y - y1) <= 20 and abs(x - x1) <= 20:
             if self.route[0] == 5 or self.route[0] == -5:
-                return choice([(0, 5), (0, -5)])
+                return 0, -5
             else:
-                return choice([(5, 0), (-5, 0)])
+                return -5, 0
         return None
 
     def set_route(self, route):
@@ -58,10 +76,10 @@ class Apple():
     def __init__(self):
         self.x = randrange(0, 500, 20)
         self.y = randrange(0, 300, 20)
-        l = map(lambda x: x.get_coords()[0], list_of_squares)
+        l = map(lambda x: x.get_coords()[0], snake)
         while self.x in l:
             self.x = randrange(0, 500, 20)
-        r = map(lambda x: x.get_coords()[1], list_of_squares)
+        r = map(lambda x: x.get_coords()[1], snake)
         while self.y in r:
             self.y = randrange(0, 300, 20)
 
@@ -111,7 +129,7 @@ def check_eat(x, y, array, name='evil'):
 
 
 def draw_boom():
-    x, y = list_of_squares[0].get_coords()
+    x, y = snake[0].get_coords()
     pygame.time.delay(600)
     pygame.draw.rect(screen, (255, 255, 0), (x, y, 20, 20))
     pygame.display.flip()
@@ -175,24 +193,24 @@ def draw(route):
 
     if not is_game_over:
         screen.fill((0, 0, 0))
-        first = list_of_squares[0]
+        first = snake[0]
         x, y = first.get_coords()
-        last = list_of_squares.pop()
+        last = snake.pop()
 
         set_route = None
 
         last.set_coords(x + route[0], y + route[1])
-        list_of_squares.insert(0, last)
-        if check_eat(x, y, list_of_squares, name='me'):
+        snake.insert(0, last)
+        if check_eat(x, y, snake, name='me'):
             current_apple = Apple()
 
         pygame.draw.rect(screen, (255, 0, 0), (current_apple.x, current_apple.y, 20, 20))
 
-        x2, y2 = list_of_squares[0].get_coords()  #coords of first square
+        x2, y2 = snake[0].get_coords()  #coords of first square
 
         pygame.draw.rect(screen, (10, 180, 10), (x2, y2, 20, 20))
 
-        for square in list_of_squares[1:]:
+        for square in snake[1:]:
             x1, y1 = square.get_coords()
             if is_evil_snake_appeared:
                 if evil_snake.check_go(x1, y1) != None:
@@ -203,7 +221,7 @@ def draw(route):
 
         draw_score()
 
-        for square in list_of_squares[2:]:
+        for square in snake[2:]:
             x1, y1 = square.get_coords()
             if y1 - 10 == y2 and x2 == x1 or y1 == y2 and x2 + 10 == x1 \
                     or y1 + 10 == y2 and x2 == x1 or y1 == y2 and x2 - 10 == x1:
@@ -240,7 +258,7 @@ def draw(route):
 
 
 def set_standart():
-    global start, end, is_game_over, route, time, score, time_int, list_of_squares, is_evil_snake_appeared
+    global start, end, is_game_over, route, time, score, time_int, snake, is_evil_snake_appeared
     start = True
     end = False
     is_evil_snake_appeared = False
@@ -249,7 +267,7 @@ def set_standart():
     time = 65
     score = 0
     time_int = 65
-    list_of_squares = [Square(250, 150), Square(270, 150), Square(290, 150), Square(310, 150)]
+    snake = Snake()
 
 
 running = True
@@ -261,7 +279,7 @@ if __name__ == '__main__':
     start = False
 
     is_evil_snake_appeared = False
-
+    snake = Snake()
     score = 0
 
     end = False
@@ -272,8 +290,6 @@ if __name__ == '__main__':
     time_int = 65
 
     is_game_over = False
-
-    list_of_squares = [Square(250, 150), Square(270, 150), Square(290, 150), Square(310, 150)]
     current_apple = Apple()
 
     while running:
