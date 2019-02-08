@@ -1,7 +1,28 @@
+# Надо сделать взрыв через частицы, спрайты мб
+
+
 import pygame
 from pygame.locals import *
 from random import randint, choice
 from random import randrange
+
+
+class GameMenu():
+    def __init__(self):
+        self.v = 300
+        self.width = 200
+        self.height = 250
+        self.x = WIDTH / 2 - self.width / 2
+        self.y = -HEIGHT
+
+        self.button_width = 180
+        self.button_height = 60
+
+        self.resume_button_x = 10
+        self.resume_button_y = self.y + 20
+
+        self.quit_button_x = 10
+        self.quit_button_y = self.resume_button_y + self.button_height + 20
 
 
 class Snake():
@@ -89,7 +110,7 @@ class Square():
         self.x = x
         self.y = y
         self.width = 20
-        self.height = 20
+        self.HEIGHT = 20
 
     def get_coords(self):
         return self.x, self.y
@@ -97,14 +118,14 @@ class Square():
     def set_coords(self, x, y):
         self.x = x
         self.y = y
-        if self.x > width - 30:
+        if self.x > WIDTH - 30:
             self.x = 0
         if self.x < 0:
-            self.x = width - 30
-        if self.y > height:
+            self.x = WIDTH - 30
+        if self.y > HEIGHT:
             self.y = 0
         if self.y < 0:
-            self.y = height
+            self.y = HEIGHT
 
 
 def add_square(array):
@@ -159,10 +180,10 @@ def draw_game_over():
     text = font.render("GAMEOVER Your score: " + str(score), 1, (100, 255, 100))
 
     text_best_score = font.render('Best score: ' + str(best_score), 1, (50, 200, 50))
-    text_best_score_x = width // 2 - text_best_score.get_width() // 2
-    text_best_score_y = height // 2 - text_best_score.get_height() // 2 - 50
-    text_x = width // 2 - text.get_width() // 2
-    text_y = height // 2 - text.get_height() // 2
+    text_best_score_x = WIDTH // 2 - text_best_score.get_width() // 2
+    text_best_score_y = HEIGHT // 2 - text_best_score.get_height() // 2 - 50
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
     text_w = text.get_width()
     text_h = text.get_height()
     screen.blit(text, (text_x, text_y))
@@ -175,10 +196,23 @@ def draw_menu():
     screen.fill((0, 0, 0))
     font = pygame.font.Font(None, 50)
     text = font.render("Start", 1, (250, 100, 100))
-    text_x = width // 2 - text.get_width() // 2
-    text_y = height // 2 - text.get_height() // 2
+    text_x = WIDTH // 2 - text.get_width() // 2
+    text_y = HEIGHT // 2 - text.get_height() // 2
     screen.blit(text, (text_x, text_y))
 
+
+def draw_game_menu():
+    screen.fill((0, 0, 0))
+    if game_menu.y < 0:
+        game_menu.y += game_menu.v * clock.tick() / 1000
+        game_menu.resume_button_y += game_menu.v * clock.tick() / 1000
+        game_menu.quit_button_y += game_menu.v * clock.tick() / 1000
+    print(game_menu.x, game_menu.y)
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.x, game_menu.y, game_menu.width, game_menu.height), 10)
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.resume_button_x,
+                                               game_menu.resume_button_y, game_menu.button_width, game_menu.button_height))
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.quit_button_x,
+                     game_menu.quit_button_y, game_menu.button_width, game_menu.button_height))
 
 def draw_score():
     if start:
@@ -258,9 +292,10 @@ def draw(route):
 
 
 def set_standart():
-    global start, end, is_game_over, route, time, score, time_int, snake, is_evil_snake_appeared
+    global start, end, is_game_over, route, time, score, time_int, snake, is_evil_snake_appeared, game_menu
     start = True
     end = False
+    game_menu = GameMenu()
     is_evil_snake_appeared = False
     is_game_over = False
     route = (-10, 0)
@@ -273,7 +308,7 @@ def set_standart():
 running = True
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 530, 300
+    size = WIDTH, HEIGHT = 530, 300
     screen = pygame.display.set_mode(size)
     route = (-10, 0)
     start = False
@@ -282,17 +317,21 @@ if __name__ == '__main__':
     snake = Snake()
     score = 0
 
+    game_menu = GameMenu()
+
     end = False
+    is_menu = False
 
     delta = 10
 
-    time = 65
-    time_int = 65
+    time = 60
+    time_int = 60
 
     is_game_over = False
     current_apple = Apple()
 
     while running:
+        pygame.time.delay(time_int)
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN and not start:
                 x, y = event.pos
@@ -302,10 +341,17 @@ if __name__ == '__main__':
             if event.type == pygame.MOUSEBUTTONDOWN and end:
                 start = False
 
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_ESCAPE:
+                    if not is_menu:
+                        clock = pygame.time.Clock()
+                        is_menu = True
+                    else:
+                        is_menu = False
+                        game_menu = GameMenu()
+
             if event.type == pygame.QUIT:
                 running = False
-
-        pygame.time.delay(time_int)
 
         keys = pygame.key.get_pressed()
 
@@ -322,8 +368,10 @@ if __name__ == '__main__':
             evil_snake = EvilSnake()
             is_evil_snake_appeared = True
 
-        if start:
+        if start and not is_menu:
             draw(route)
+        elif is_menu:
+            draw_game_menu()
         else:
             draw_menu()
         pygame.display.flip()
