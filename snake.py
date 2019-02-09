@@ -7,6 +7,14 @@ from random import randint, choice
 from random import randrange
 
 
+class Button():
+    def __init__(self, x, y):
+        self.width = 180
+        self.height = 60  # the same in all buttons
+        self.x = x
+        self.y = y
+
+
 class GameMenu():
     def __init__(self):
         self.v = 300
@@ -15,14 +23,11 @@ class GameMenu():
         self.x = WIDTH / 2 - self.width / 2
         self.y = -HEIGHT
 
-        self.button_width = 180
-        self.button_height = 60
+        self.resume_button = Button(self.x + 10, self.y + 20)
+        self.quit_button = Button(self.x + 10, self.resume_button.y + self.resume_button.height + 20)
 
-        self.resume_button_x = 10
-        self.resume_button_y = self.y + 20
-
-        self.quit_button_x = 10
-        self.quit_button_y = self.resume_button_y + self.button_height + 20
+        self.button_width = self.resume_button.width
+        self.button_height = self.resume_button.height
 
 
 class Snake():
@@ -125,7 +130,7 @@ class Square():
         if self.y > HEIGHT:
             self.y = 0
         if self.y < 0:
-            self.y = HEIGHT
+            self.y = HEIGHT - 10
 
 
 def add_square(array):
@@ -151,16 +156,19 @@ def check_eat(x, y, array, name='evil'):
 
 def draw_boom():
     x, y = snake[0].get_coords()
-    pygame.time.delay(600)
-    pygame.draw.rect(screen, (255, 255, 0), (x, y, 20, 20))
-    pygame.display.flip()
-    pygame.time.delay(200)
-    pygame.draw.rect(screen, (255, 0, 0), (x - 5, y - 5, 30, 30), 10)
-    pygame.display.flip()
-    pygame.time.delay(200)
-    pygame.draw.rect(screen, (255, 255, 0), (x - 10, y - 10, 40, 40), 5)
-    pygame.display.flip()
-    pygame.time.delay(500)
+    clock1 = pygame.time.Clock()
+    arr = [[x + 10, y + 10, randint(-10, 10), randint(-10, 10)] for i in range(randint(25, 35))]  # arr[i][0] = X, arr[i][1] = Y
+    l = len(arr)
+    for i in range(50):  # 3 seconds
+
+        n = clock1.tick()
+        for j in range(l):
+            print(arr[j][0])
+            arr[j][0] += arr[j][2] * n / 1000
+            arr[j][1] += arr[j][3] * n / 1000
+            pygame.draw.rect(screen, (244, 0, 0), (arr[j][0], arr[j][1], 5, 5))
+            pygame.display.flip()
+        pygame.time.delay(60)
 
 
 def draw_game_over():
@@ -201,18 +209,32 @@ def draw_menu():
     screen.blit(text, (text_x, text_y))
 
 
+def check_intersection(x, y, x1, y1, w, h):
+    if x1 <= x <= x1 + w and y1 <= y <= y1 + h:
+        return True
+    return False
+
+
 def draw_game_menu():
     screen.fill((0, 0, 0))
     if game_menu.y < 0:
-        game_menu.y += game_menu.v * clock.tick() / 1000
-        game_menu.resume_button_y += game_menu.v * clock.tick() / 1000
-        game_menu.quit_button_y += game_menu.v * clock.tick() / 1000
-    print(game_menu.x, game_menu.y)
+        a = game_menu.v * clock.tick() / 1000
+        game_menu.y += a
+        game_menu.resume_button.y += a
+        game_menu.quit_button.y += a
+    print(game_menu.resume_button.y)
     pygame.draw.rect(screen, (250, 100, 100), (game_menu.x, game_menu.y, game_menu.width, game_menu.height), 10)
-    pygame.draw.rect(screen, (250, 100, 100), (game_menu.resume_button_x,
-                                               game_menu.resume_button_y, game_menu.button_width, game_menu.button_height))
-    pygame.draw.rect(screen, (250, 100, 100), (game_menu.quit_button_x,
-                     game_menu.quit_button_y, game_menu.button_width, game_menu.button_height))
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.resume_button.x,
+                     game_menu.resume_button.y, game_menu.button_width, game_menu.button_height))
+
+    font = pygame.font.Font(None, 60)
+    text = font.render('Resume', 1, (10, 10, 10))
+    screen.blit(text, (game_menu.resume_button.x, game_menu.resume_button.y))
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.quit_button.x,
+                     game_menu.quit_button.y, game_menu.button_width, game_menu.button_height))
+    text2 = font.render('Quit', 1, (10, 10, 10))
+    screen.blit(text2, (game_menu.quit_button.x, game_menu.quit_button.y))
+
 
 def draw_score():
     if start:
@@ -319,13 +341,15 @@ if __name__ == '__main__':
 
     game_menu = GameMenu()
 
+    clock_for_boom = pygame.time.Clock()
+
     end = False
     is_menu = False
 
     delta = 10
 
-    time = 60
-    time_int = 60
+    time = 65
+    time_int = 65
 
     is_game_over = False
     current_apple = Apple()
@@ -333,20 +357,34 @@ if __name__ == '__main__':
     while running:
         pygame.time.delay(time_int)
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN and not start:
-                x, y = event.pos
-                if 150 <= x <= 350 and 100 <= y <= 200:
-                    set_standart()
+            if event.type == pygame.MOUSEBUTTONDOWN:
 
-            if event.type == pygame.MOUSEBUTTONDOWN and end:
-                start = False
+                if not start:
+                    x, y = event.pos
+                    if 150 <= x <= 350 and 100 <= y <= 200:
+                        set_standart()
+
+                elif end:
+                    start = False
+
+                elif is_menu:
+                    x, y = event.pos
+                    x1, y1 = game_menu.resume_button.x, game_menu.resume_button.y
+                    if check_intersection(x, y, x1, y1, game_menu.button_width, game_menu.button_height):
+                        is_menu = False
+                        game_menu = GameMenu()
+                    x1, y1 = game_menu.quit_button.x, game_menu.quit_button.y
+                    if check_intersection(x, y, x1, y1, game_menu.button_width, game_menu.button_height):
+                        is_menu = False
+                        is_game_over = True
+                        game_menu = GameMenu()
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
-                    if not is_menu:
+                    if not is_menu and start and not is_game_over:
                         clock = pygame.time.Clock()
                         is_menu = True
-                    else:
+                    elif start and is_menu:
                         is_menu = False
                         game_menu = GameMenu()
 
