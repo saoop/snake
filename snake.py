@@ -13,6 +13,15 @@ class Button():
         self.height = 60  # the same in all buttons
         self.x = x
         self.y = y
+        self.color = (250, 100, 100)
+
+    def check_mouse(self):
+        x, y = pygame.mouse.get_pos()
+        if check_intersection(x, y, self.x,
+                              self.y, self.width, self.height):
+            self.color = (220, 80, 80)
+        else:
+            self.color = (250, 100, 100)
 
 
 class GameMenu():
@@ -157,7 +166,8 @@ def check_eat(x, y, array, name='evil'):
 def draw_boom():
     x, y = snake[0].get_coords()
     clock1 = pygame.time.Clock()
-    arr = [[x + 10, y + 10, randint(-10, 10), randint(-10, 10)] for i in range(randint(25, 35))]  # arr[i][0] = X, arr[i][1] = Y
+    arr = [[x + 10, y + 10, randint(-10, 10), randint(-10, 10)] for i in range(randint(25, 35))]
+    # arr[i][0] = X, arr[i][1] = Y
     l = len(arr)
     for i in range(50):  # 3 seconds
 
@@ -222,15 +232,19 @@ def draw_game_menu():
         game_menu.y += a
         game_menu.resume_button.y += a
         game_menu.quit_button.y += a
-    print(game_menu.resume_button.y)
     pygame.draw.rect(screen, (250, 100, 100), (game_menu.x, game_menu.y, game_menu.width, game_menu.height), 10)
-    pygame.draw.rect(screen, (250, 100, 100), (game_menu.resume_button.x,
-                     game_menu.resume_button.y, game_menu.button_width, game_menu.button_height))
 
+    game_menu.resume_button.check_mouse()
+
+    pygame.draw.rect(screen, game_menu.resume_button.color, (game_menu.resume_button.x,
+                     game_menu.resume_button.y, game_menu.button_width, game_menu.button_height))
     font = pygame.font.Font(None, 60)
     text = font.render('Resume', 1, (10, 10, 10))
     screen.blit(text, (game_menu.resume_button.x, game_menu.resume_button.y))
-    pygame.draw.rect(screen, (250, 100, 100), (game_menu.quit_button.x,
+
+    game_menu.quit_button.check_mouse()
+
+    pygame.draw.rect(screen, game_menu.quit_button.color, (game_menu.quit_button.x,
                      game_menu.quit_button.y, game_menu.button_width, game_menu.button_height))
     text2 = font.render('Quit', 1, (10, 10, 10))
     screen.blit(text2, (game_menu.quit_button.x, game_menu.quit_button.y))
