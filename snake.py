@@ -62,6 +62,7 @@ class EvilSnake(Snake):
         super().__init__()
         self.delta = 5
         self.true_delta = 5.0
+        self.list_snake = [Square(-100 + i * 20, 100) for i in range(4)]
 
         if current_apple.x == self.list_snake[0].x:
             if current_apple.y < self.list_snake[0].y:
@@ -77,7 +78,6 @@ class EvilSnake(Snake):
     def update_route(self, set_this_route=None):
         if set_this_route != None:
             self.route = set_this_route
-            print('sd')
         else:
             if current_apple.x == self.list_snake[0].x:
                 if current_apple.y < self.list_snake[0].y:
@@ -92,11 +92,11 @@ class EvilSnake(Snake):
 
     def check_go(self, x, y):
         x1, y1 = self.list_snake[0].get_coords()
-        if abs(y - y1) <= 20 and abs(x - x1) <= 20:
-            if self.route[0] == 5 or self.route[0] == -5:
-                return 0, -5
+        if 0 < abs(x - x1) <= 25 and abs(y - y1) <= 25:
+            if self.route[1] == 0:
+                return 0, 5 if x - x1 < 0 else 0, -5
             else:
-                return -5, 0
+                return 5, 0 if y - y1 < 0 else -5, 0
         return None
 
     def set_route(self, route):
@@ -136,7 +136,7 @@ class Square():
             self.x = 0
         if self.x < 0:
             self.x = WIDTH - 30
-        if self.y > HEIGHT:
+        if self.y > HEIGHT - 10:
             self.y = 0
         if self.y < 0:
             self.y = HEIGHT - 10
@@ -166,17 +166,22 @@ def check_eat(x, y, array, name='evil'):
 def draw_boom():
     x, y = snake[0].get_coords()
     clock1 = pygame.time.Clock()
-    arr = [[x + 10, y + 10, randint(-10, 10), randint(-10, 10)] for i in range(randint(25, 35))]
+    red = (255, 0, 0)
+    dark_red = (155, 0, 0)
+    yellow = (255, 255, 0)
+    dark_yellow = (155, 155, 0)
+    orange = (255, 165, 0)
+    arr = [[x + randint(-12, 12), y + randint(-12, 12), randint(-15, 15),
+            randint(-15, 15), choice([red, yellow, orange, dark_red, dark_yellow])] for _ in range(randint(25, 35))]
     # arr[i][0] = X, arr[i][1] = Y
     l = len(arr)
     for i in range(50):  # 3 seconds
-
         n = clock1.tick()
         for j in range(l):
             print(arr[j][0])
             arr[j][0] += arr[j][2] * n / 1000
             arr[j][1] += arr[j][3] * n / 1000
-            pygame.draw.rect(screen, (244, 0, 0), (arr[j][0], arr[j][1], 5, 5))
+            pygame.draw.rect(screen, arr[j][4], (arr[j][0], arr[j][1], 5, 5))
             pygame.display.flip()
         pygame.time.delay(60)
 
@@ -262,6 +267,7 @@ def draw(route):
     global is_game_over
 
     if not is_game_over:
+        is_boom_draw = False
         screen.fill((0, 0, 0))
         first = snake[0]
         x, y = first.get_coords()
@@ -276,32 +282,29 @@ def draw(route):
 
         pygame.draw.rect(screen, (255, 0, 0), (current_apple.x, current_apple.y, 20, 20))
 
-        x2, y2 = snake[0].get_coords()  #coords of first square
+        x2, y2 = snake[0].get_coords()  # coords of first square
 
         pygame.draw.rect(screen, (10, 180, 10), (x2, y2, 20, 20))
 
         for square in snake[1:]:
             x1, y1 = square.get_coords()
-            if is_evil_snake_appeared:
-                if evil_snake.check_go(x1, y1) != None:
-                    set_route = evil_snake.check_go(x1, y1)
-                    print('1')
-
             pygame.draw.rect(screen, (0, 255, 0), (x1, y1, 20, 20))
 
         draw_score()
-
         for square in snake[2:]:
             x1, y1 = square.get_coords()
             if y1 - 10 == y2 and x2 == x1 or y1 == y2 and x2 + 10 == x1 \
                     or y1 + 10 == y2 and x2 == x1 or y1 == y2 and x2 - 10 == x1:
                 is_game_over = True
-                draw_boom()
-                pygame.time.delay(3000)
-                print(x1, y1, x2, y2)
+                is_boom_draw = True
+                pygame.time.delay(200)
                 break
 
         if is_evil_snake_appeared:
+            for square in snake[:]:
+                x1, y1 = square.get_coords()
+                if evil_snake.check_go(x1, y1):
+                    set_route = evil_snake.check_go(x1, y1)
 
             for square in evil_snake.list_snake:
                 x, y = square.get_coords()
@@ -321,8 +324,11 @@ def draw(route):
                     draw_boom()
                     break
 
-            if check_eat(x, y, evil_snake.list_snake):
+            if check_eat(evil_snake[0].x, evil_snake[0].y, evil_snake.list_snake):
                 current_apple = Apple()
+
+        if is_boom_draw:
+            draw_boom()  # я так сделал, чтобы сначала нарисовались обе змейки, а только потом произошел взрыв
     else:
         draw_game_over()
 
@@ -388,6 +394,7 @@ if __name__ == '__main__':
                         is_menu = False
                         game_menu = GameMenu()
                     x1, y1 = game_menu.quit_button.x, game_menu.quit_button.y
+
                     if check_intersection(x, y, x1, y1, game_menu.button_width, game_menu.button_height):
                         is_menu = False
                         is_game_over = True
