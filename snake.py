@@ -2,9 +2,9 @@
 
 
 import pygame
-from pygame.locals import *
 from random import randint, choice
 from random import randrange
+import os
 
 
 class Button():
@@ -331,6 +331,29 @@ def draw(route):
             draw_boom()  # я так сделал, чтобы сначала нарисовались обе змейки, а только потом произошел взрыв
     else:
         draw_game_over()
+        draw_cursor()
+
+
+def draw_cursor():
+    x, y = pygame.mouse.get_pos()
+    cursor.rect.x = x
+    cursor.rect.y = y
+    all_sprites.draw(screen)
+
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Cannot load image:', fullname)
+        raise SystemExit(message)
+    image = image.convert_alpha()
+    if colorkey is not None:
+        if colorkey is -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    return image
 
 
 def set_standart():
@@ -347,17 +370,26 @@ def set_standart():
     snake = Snake()
 
 
-running = True
 if __name__ == '__main__':
     pygame.init()
+
+    pygame.mouse.set_visible(False)
+
     size = WIDTH, HEIGHT = 530, 300
     screen = pygame.display.set_mode(size)
+    running = True
     route = (-10, 0)
     start = False
 
     is_evil_snake_appeared = False
     snake = Snake()
     score = 0
+
+    all_sprites = pygame.sprite.Group()
+    cursor = pygame.sprite.Sprite()
+    cursor.image = load_image('cursor.png')
+    cursor.rect = cursor.image.get_rect()
+    all_sprites.add(cursor)
 
     game_menu = GameMenu()
 
@@ -431,7 +463,9 @@ if __name__ == '__main__':
             draw(route)
         elif is_menu:
             draw_game_menu()
+            draw_cursor()
         else:
             draw_menu()
+            draw_cursor()
         pygame.display.flip()
     pygame.quit()
