@@ -1,10 +1,18 @@
-# Надо сделать взрыв через частицы, спрайты мб
-
-
 import pygame
 from random import randint, choice
 from random import randrange
 import os
+
+
+class Slider():
+    def __init__(self, x, y):
+        self.width = 180
+        self.height = 10
+        self.x = x
+        self.y = y
+
+        self.circle_x = self.x + self.width / 2 - 5
+        self.circle_y = self.y
 
 
 class Button():
@@ -38,6 +46,18 @@ class GameMenu():
         self.button_width = self.resume_button.width
         self.button_height = self.resume_button.height
 
+        self.music_slider = Slider(self.x + 10, self.quit_button.y + self.quit_button.height + 20)
+        self.sound_slider = Slider(self.x + 10, self.music_slider.y + 40)
+
+    def reset(self):
+        self.y = -HEIGHT
+        self.resume_button.y = self.y + 20
+        self.quit_button.y = self.resume_button.y + 20 + self.button_height
+        self.music_slider.y = self.quit_button.y + self.quit_button.height + 20
+        self.music_slider.circle_y = self.music_slider.y
+        self.sound_slider.y = self.music_slider.y + 40
+        self.sound_slider.circle_y = self.sound_slider.y
+
 
 class Snake():
     def __init__(self):
@@ -62,7 +82,7 @@ class EvilSnake(Snake):
         super().__init__()
         self.delta = 5
         self.true_delta = 5.0
-        self.list_snake = [Square(-100 + i * 20, 100) for i in range(4)]
+        self.list_snake = [Square(530 + i * 5, 100) for i in range(4)]
 
         if current_apple.x == self.list_snake[0].x:
             if current_apple.y < self.list_snake[0].y:
@@ -114,6 +134,7 @@ class Apple():
         l = map(lambda x: x.get_coords()[0], snake)
         while self.x in l:
             self.x = randrange(0, 500, 20)
+
         r = map(lambda x: x.get_coords()[1], snake)
         while self.y in r:
             self.y = randrange(0, 300, 20)
@@ -173,7 +194,6 @@ def draw_boom():
     orange = (255, 165, 0)
     arr = [[x + randint(-12, 12), y + randint(-12, 12), randint(-15, 15),
             randint(-15, 15), choice([red, yellow, orange, dark_red, dark_yellow])] for _ in range(randint(25, 35))]
-    # arr[i][0] = X, arr[i][1] = Y
     l = len(arr)
     for i in range(50):  # 3 seconds
         n = clock1.tick()
@@ -237,6 +257,11 @@ def draw_game_menu():
         game_menu.y += a
         game_menu.resume_button.y += a
         game_menu.quit_button.y += a
+        game_menu.music_slider.y += a
+        game_menu.music_slider.circle_y += a
+        game_menu.sound_slider.y += a
+        game_menu.sound_slider.circle_y += a
+
     pygame.draw.rect(screen, (250, 100, 100), (game_menu.x, game_menu.y, game_menu.width, game_menu.height), 10)
 
     game_menu.resume_button.check_mouse()
@@ -254,6 +279,14 @@ def draw_game_menu():
     text2 = font.render('Quit', 1, (10, 10, 10))
     screen.blit(text2, (game_menu.quit_button.x, game_menu.quit_button.y))
 
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.music_slider.x, game_menu.music_slider.y,
+                                               game_menu.music_slider.width, game_menu.music_slider.height))
+    pygame.draw.rect(screen, (0, 100, 0), (game_menu.music_slider.circle_x, game_menu.music_slider.circle_y, 10, 10))
+
+    pygame.draw.rect(screen, (250, 100, 100), (game_menu.sound_slider.x, game_menu.sound_slider.y,
+                                               game_menu.sound_slider.width, game_menu.sound_slider.height))
+    pygame.draw.rect(screen, (0, 100, 0), (game_menu.sound_slider.circle_x, game_menu.sound_slider.circle_y, 10, 10))
+
 
 def draw_score():
     if start:
@@ -264,7 +297,7 @@ def draw_score():
 
 def draw(route):
     global current_apple
-    global is_game_over
+    global is_game_over, time_int
 
     if not is_game_over:
         is_boom_draw = False
@@ -297,6 +330,7 @@ def draw(route):
                     or y1 + 10 == y2 and x2 == x1 or y1 == y2 and x2 - 10 == x1:
                 is_game_over = True
                 is_boom_draw = True
+                choice(crash_sounds).play()
                 pygame.time.delay(200)
                 break
 
@@ -311,17 +345,19 @@ def draw(route):
                 pygame.draw.rect(screen, (255, 255, 100), (x, y, 20, 20))
 
             evil_snake.update_route(set_route)
-            last = evil_snake.list_snake.pop()
-            x, y = evil_snake.list_snake[0].x, evil_snake.list_snake[0].y
+            last = evil_snake.pop()
+            x, y = evil_snake[0].x, evil_snake[0].y
             last.set_coords(x + evil_snake.route[0], y + evil_snake.route[1])
-            evil_snake.list_snake.insert(0, last)
+            evil_snake.insert(0, last)
 
-            for square in evil_snake.list_snake:
+            for square in evil_snake:
                 x, y = square.get_coords()
                 if x <= x2 < x + 20 and y <= y2 < y + 20 or\
             x2 <= x < x2 + 20 and y2 <= y < y2 + 20:
                     is_game_over = True
-                    draw_boom()
+                    is_boom_draw = True
+                    choice(crash_sounds).play()
+                    pygame.time.delay(200)
                     break
 
             if check_eat(evil_snake[0].x, evil_snake[0].y, evil_snake.list_snake):
@@ -330,6 +366,7 @@ def draw(route):
         if is_boom_draw:
             draw_boom()  # я так сделал, чтобы сначала нарисовались обе змейки, а только потом произошел взрыв
     else:
+        time_int = 10
         draw_game_over()
         draw_cursor()
 
@@ -356,11 +393,18 @@ def load_image(name, colorkey=None):
     return image
 
 
+def load_sounds():
+    global crash_sounds, music_name
+    crash_sounds = [pygame.mixer.Sound('sounds/crash1.wav'), pygame.mixer.Sound('sounds/crash2.wav'),
+                    pygame.mixer.Sound('sounds/crash3.wav'), pygame.mixer.Sound('sounds/crash4.wav')]
+    music_name = choice(['sounds/music1.wav', 'sounds/music2.wav', 'sounds/music3.wav'])
+
+
 def set_standart():
     global start, end, is_game_over, route, time, score, time_int, snake, is_evil_snake_appeared, game_menu
     start = True
     end = False
-    game_menu = GameMenu()
+    game_menu.y = -HEIGHT
     is_evil_snake_appeared = False
     is_game_over = False
     route = (-10, 0)
@@ -372,11 +416,15 @@ def set_standart():
 
 if __name__ == '__main__':
     pygame.init()
+    load_sounds()
+    pygame.mixer.music.load(music_name)
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.set_volume(0.5)
 
     pygame.mouse.set_visible(False)
 
     size = WIDTH, HEIGHT = 530, 300
-    screen = pygame.display.set_mode(size)
+    screen = pygame.display.set_mode((WIDTH + 10, HEIGHT))
     running = True
     route = (-10, 0)
     start = False
@@ -400,8 +448,8 @@ if __name__ == '__main__':
 
     delta = 10
 
-    time = 65
-    time_int = 65
+    time = 60
+    time_int = 10
 
     is_game_over = False
     current_apple = Apple()
@@ -417,29 +465,50 @@ if __name__ == '__main__':
                         set_standart()
 
                 elif end:
+                    time_int = 10
                     start = False
 
                 elif is_menu:
                     x, y = event.pos
                     x1, y1 = game_menu.resume_button.x, game_menu.resume_button.y
                     if check_intersection(x, y, x1, y1, game_menu.button_width, game_menu.button_height):
+                        time_int = int(time)
+                        pygame.mixer.music.unpause()
                         is_menu = False
-                        game_menu = GameMenu()
+                        game_menu.reset()
                     x1, y1 = game_menu.quit_button.x, game_menu.quit_button.y
 
                     if check_intersection(x, y, x1, y1, game_menu.button_width, game_menu.button_height):
+                        pygame.mixer.music.unpause()
                         is_menu = False
                         is_game_over = True
-                        game_menu = GameMenu()
+                        game_menu.reset()
+
+                    x1, y1 = game_menu.music_slider.x, game_menu.music_slider.y
+                    w, h = game_menu.music_slider.width, game_menu.music_slider.height
+                    if check_intersection(x, y, x1, y1, w, h):
+                        game_menu.music_slider.circle_x = x
+                        a = x - x1
+                        pygame.mixer.music.set_volume(a / 180)
+
+                    x1, y1 = game_menu.sound_slider.x, game_menu.sound_slider.y
+                    w, h = game_menu.sound_slider.width, game_menu.sound_slider.height
+                    if check_intersection(x, y, x1, y1, w, h):
+                        game_menu.sound_slider.circle_x = x
+                        a = x - x1
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
                     if not is_menu and start and not is_game_over:
+                        time_int = 10
                         clock = pygame.time.Clock()
                         is_menu = True
+                        pygame.mixer.music.pause()
                     elif start and is_menu:
+                        time_int = int(time)
+                        pygame.mixer.music.unpause()
                         is_menu = False
-                        game_menu = GameMenu()
+                        game_menu.reset()
 
             if event.type == pygame.QUIT:
                 running = False
