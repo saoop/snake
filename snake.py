@@ -414,6 +414,11 @@ def set_standart():
     snake = Snake()
 
 
+def set_volume(sound, a):
+    sound.set_volume(a)
+    return sound
+
+
 if __name__ == '__main__':
     pygame.init()
     load_sounds()
@@ -496,6 +501,7 @@ if __name__ == '__main__':
                     if check_intersection(x, y, x1, y1, w, h):
                         game_menu.sound_slider.circle_x = x
                         a = x - x1
+                        crash_sounds = list(map(lambda x: set_volume(x, a / 180), crash_sounds))
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_ESCAPE:
