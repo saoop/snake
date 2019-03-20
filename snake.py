@@ -1,7 +1,19 @@
 import pygame
+import datetime
 from random import randint, choice
 from random import randrange
 import os
+
+
+class LeaderBoard():
+    def __init__(self):
+        with open('leaderboard.txt', 'r', encoding="utf8") as file:
+            self.arr_of_scores = file.read().split('\n')
+
+    def draw(self):
+        font = pygame.font.Font(None, 20)
+        for i in range(1, 5):
+            screen.blit(font.render(self.arr_of_scores[-i], 1, (70, 230, 70)), (400, 20 + i * 15))
 
 
 class Slider():
@@ -198,7 +210,6 @@ def draw_boom():
     for i in range(50):  # 3 seconds
         n = clock1.tick()
         for j in range(l):
-            print(arr[j][0])
             arr[j][0] += arr[j][2] * n / 1000
             arr[j][1] += arr[j][3] * n / 1000
             pygame.draw.rect(screen, arr[j][4], (arr[j][0], arr[j][1], 5, 5))
@@ -395,9 +406,9 @@ def load_image(name, colorkey=None):
 
 def load_sounds():
     global crash_sounds, music_name
-    crash_sounds = [pygame.mixer.Sound('sounds/crash1.wav'), pygame.mixer.Sound('sounds/crash2.wav'),
-                    pygame.mixer.Sound('sounds/crash3.wav'), pygame.mixer.Sound('sounds/crash4.wav')]
-    music_name = choice(['sounds/music1.wav', 'sounds/music2.wav', 'sounds/music3.wav'])
+    crash_sounds = [pygame.mixer.Sound('sounds/crashes/crash1.wav'), pygame.mixer.Sound('sounds/crashes/crash2.wav'),
+                    pygame.mixer.Sound('sounds/crashes/crash3.wav'), pygame.mixer.Sound('sounds/crashes/crash4.wav')]
+    music_name = choice(['sounds/music/music1.wav', 'sounds/music/music2.wav', 'sounds/music/music3.wav'])
 
 
 def set_standart():
@@ -453,6 +464,8 @@ if __name__ == '__main__':
 
     delta = 10
 
+    leader_board = LeaderBoard()
+
     time = 60
     time_int = 10
 
@@ -470,6 +483,11 @@ if __name__ == '__main__':
                         set_standart()
 
                 elif end:
+                    with open('leaderboard.txt', 'a') as file:
+                        data = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        file.write(data + '\n')
+                    leader_board = LeaderBoard()
+
                     time_int = 10
                     start = False
 
@@ -542,5 +560,6 @@ if __name__ == '__main__':
         else:
             draw_menu()
             draw_cursor()
+            leader_board.draw()
         pygame.display.flip()
     pygame.quit()
